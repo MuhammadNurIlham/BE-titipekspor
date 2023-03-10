@@ -17,6 +17,22 @@ module.exports = (sequelize, DataTypes) => {
           name: "idUser",
         },
       });
+
+      membership.hasMany(models.transaction, {
+        as: "transactions",
+        foreignKey: {
+          name: "idMembership"
+        },
+      });
+
+      membership.belongsToMany(models.category, {
+        as: "categories",
+        through: {
+          model: "memberCategory",
+          as: "bridge",
+        },
+        foreignKey: "idMembership"
+      });
     }
   }
   membership.init({

@@ -17,6 +17,28 @@ module.exports = (sequelize, DataTypes) => {
           name: "idUser",
         },
       });
+
+      // hasMany to model membership
+      user.hasMany(models.membership, {
+        as: "memberships",
+        foreignKey: {
+          name: "idUser",
+        },
+      });
+
+      // hasMany association to transaction model
+      user.hasMany(models.transaction, {
+        as: "buyerTransactions",
+        foreignKey: {
+          name: "idBuyer",
+        },
+      });
+      user.hasMany(models.transaction, {
+        as: "sellerTransactions",
+        foreignKey: {
+          name: "idSeller",
+        },
+      });
     }
   }
   user.init({

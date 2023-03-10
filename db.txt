@@ -8,3 +8,7 @@ npx sequelize-cli model:generate --name membership --attributes name:string,desc
 
 npx sequelize-cli model:generate --name transaction --attributes idMembership:integer,idBuyer:integer,idSeller:integer,price:integer
 
+npx sequelize-cli model:generate --name category --attributes name:string
+
+npx sequelize-cli model:generate --name memberCategory --attributes idMembership:integer,idCategory:integer
+
