@@ -6,26 +6,41 @@ const jwt = require("jsonwebtoken");
 const { user } = require('../../models');
 
 exports.register = async (req, res) => {
+
     // our validation schema
     const schema = Joi.object({
         name: Joi.string().min(3).required(),
         email: Joi.string().email().min(6).required(),
         password: Joi.string().min(6).required(),
-        phone: Joi.number().min(11).max(13).required()
+        phone: Joi.string().min(11).max(13).required()
     });
 
     // do validation and get error object from schema.validate
-    const {error} = schema.validate(req.body);
+    const { error } = schema.validate(req.body);
 
     // if error exist send validation error message
     if (error)
-    return res.status(400).send({
-        error: {
-            message: error.details[0].message,
-        },
-    });
+        return res.status(400).send({
+            error: {
+                message: error.details[0].message,
+            },
+        });
+
 
     try {
+        // Check if email is already registered
+        const isAlready = await user.findOne({
+            where: {
+                email: req.body.email,
+            },
+        });
+
+        if (isAlready) {
+            return res.status(409).send({
+                message: `Account with email: ${req.body.email} is Already`,
+            });
+        }
+
 
         // generate salt (random value) with 10 rounds
         const salt = await bcrypt.genSalt(10);
@@ -36,12 +51,12 @@ exports.register = async (req, res) => {
         const newUser = await user.create({
             name: req.body.name,
             email: req.body.email,
-            password: req.body.password,
+            password: hashedPassword,
             phone: req.body.phone
         });
 
         // generate token
-        const token = jwt.sign({ id: user.id }, process.env.TOKEN_KEY);
+        // const token = jwt.sign({ id: user.id }, process.env.TOKEN_KEY);
 
         res.status(200).send({
             status: "Success",
@@ -49,10 +64,10 @@ exports.register = async (req, res) => {
             data: {
                 name: newUser.name,
                 email: newUser.email,
-                token,
+                // token,
             },
         });
-        
+
     } catch (error) {
         console.log(error);
         res.status(500).send({
@@ -63,6 +78,7 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
+
     // our validation schema
     const schema = Joi.object({
         email: Joi.string().email().min(6).required(),
@@ -70,19 +86,17 @@ exports.login = async (req, res) => {
     });
 
     // do validation and get error object from schema.validate
-    const {error} = schema.validate(req.body);
+    const { error } = schema.validate(req.body);
 
     // if error exist send validation error message
     if (error)
-    return res.status(500).send({
-        error: {
-            messageL: error.details[0].message,
-        },
-    });
-
+        return res.status(400).send({
+            error: {
+                message: error.details[0].message,
+            },
+        });
 
     try {
-
         const userExist = await user.findOne({
             where: {
                 email: req.body.email,
@@ -99,12 +113,13 @@ exports.login = async (req, res) => {
         if (!isValid) {
             return res.status(400).send({
                 status: "Failed",
-                message: "Credential is invalid!",
+                message: "Credential is Invalid",
             });
         }
 
+        const payload = { id: userExist.id }
         // generate token
-        const token = jwt.sign({id: userExist.id}, process.env.TOKEN_KEY);
+        const token = jwt.sign(payload, process.env.SECRET_KEY);
 
         res.status(200).send({
             status: "Success",
@@ -116,7 +131,7 @@ exports.login = async (req, res) => {
                 token,
             },
         });
-        
+
     } catch (error) {
         console.log(error);
         res.status(500).send({
@@ -129,7 +144,7 @@ exports.login = async (req, res) => {
 exports.checkAuth = async (req, res) => {
     try {
 
-        const {id} = req.user.id;
+        const { id } = req.user.id;
 
         const dataUser = await user.findOne({
             where: {
@@ -158,7 +173,7 @@ exports.checkAuth = async (req, res) => {
                 },
             },
         });
-        
+
     } catch (error) {
         console.log(error);
         res.status(500).send({
